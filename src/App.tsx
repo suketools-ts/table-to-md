@@ -91,7 +91,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app__head">
-        <h1 className="app__title">表 ⇄ Markdown / Backlog 記法 変換ツール</h1>
+        <h1 className="app__title">表 ⇄ Markdown・Backlog 変換ツール</h1>
         <p className="app__lead">
           表を編集して Markdown や Backlog 記法に変換できます。ブラウザ上の表・CSV・TSV を
           貼り付ければ、逆に表へ取り込めます。

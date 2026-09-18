@@ -12,8 +12,13 @@
   color-scheme: light dark;
 }
 
+/*
+ * 閲覧側のテーマは「指定なし（OS に追従）」「light を明示」「dark を明示」の 3 状態を取る。
+ * 明るい配色を :root に置き、暗い配色を 2 か所で上書きする。
+ * 明示指定が OS 設定に勝つよう、メディアクエリ側は :not([data-theme='light']) で守る。
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #14181f;
     --surface: #1c222c;
     --border: #333c4a;
@@ -24,6 +29,18 @@
     --header-cell-bg: #26324a;
     --code-bg: #161b22;
   }
+}
+
+:root[data-theme='dark'] {
+  --bg: #14181f;
+  --surface: #1c222c;
+  --border: #333c4a;
+  --text: #e6eaf1;
+  --muted: #9aa6b8;
+  --accent: #5b8cff;
+  --accent-text: #0d1117;
+  --header-cell-bg: #26324a;
+  --code-bg: #161b22;
 }
 
 * {

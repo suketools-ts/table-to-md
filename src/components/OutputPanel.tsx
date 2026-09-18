@@ -17,6 +17,20 @@ const TABS: Array<{ value: OutputKind; label: string; ext: string; mime: string 
   { value: 'html', label: 'HTML', ext: 'html', mime: 'text/html' },
 ];
 
+/**
+ * 埋め込み（iframe）で表示されているとき、ページ自身が始めるダウンロードは
+ * サンドボックスに阻まれて無反応になる。押しても何も起きないボタンを残さないよう、
+ * その場合はダウンロードを出さずコピーに誘導する。
+ */
+const canDownload = (() => {
+  try {
+    return window.self === window.top;
+  } catch {
+    // クロスオリジンの埋め込みでは window.top の参照自体が弾かれる。
+    return false;
+  }
+})();
+
 /** 変換結果の表示・コピー・ダウンロードを行うパネル。 */
 export function OutputPanel({ table }: Props) {
   const [kind, setKind] = useState<OutputKind>('markdown');
@@ -109,9 +123,11 @@ export function OutputPanel({ table }: Props) {
           </label>
         )}
         <span className="spacer" />
-        <button type="button" onClick={handleDownload}>
-          ダウンロード
-        </button>
+        {canDownload && (
+          <button type="button" onClick={handleDownload}>
+            ダウンロード
+          </button>
+        )}
         <button type="button" onClick={handleCopyAsTable}>
           表としてコピー
         </button>
