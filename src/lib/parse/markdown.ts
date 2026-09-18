@@ -44,7 +44,13 @@ function parseAlign(cell: string): Align {
   return 'default';
 }
 
-function isDelimiterRow(cells: string[]): boolean {
+/**
+ * Markdown の区切り行かどうか。
+ * `|` を含むことを必須にしているのは、水平線（`----`）を区切り行と取り違えないため。
+ */
+export function isMarkdownDelimiterRow(line: string): boolean {
+  if (!line.includes('|')) return false;
+  const cells = splitPipeRow(line);
   return cells.length > 0 && cells.every((cell) => DELIMITER_CELL.test(cell.trim()));
 }
 
@@ -59,7 +65,7 @@ function decodeCell(cell: string): string {
 export function looksLikeMarkdownTable(text: string): boolean {
   const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '');
   if (lines.length < 2) return false;
-  return lines.some((line) => isDelimiterRow(splitPipeRow(line)) && line.includes('|'));
+  return lines.some(isMarkdownDelimiterRow);
 }
 
 /**
@@ -76,7 +82,7 @@ export function parseMarkdownTable(text: string): ParsedTable {
 
   for (const line of lines) {
     const cells = splitPipeRow(line);
-    if (!delimiterSeen && isDelimiterRow(cells) && rows.length > 0) {
+    if (!delimiterSeen && isMarkdownDelimiterRow(line) && rows.length > 0) {
       aligns = cells.map(parseAlign);
       hasHeader = true;
       delimiterSeen = true;

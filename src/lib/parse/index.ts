@@ -8,6 +8,7 @@ export * from './delimited';
 export * from './html';
 export * from './markdown';
 export * from './backlog';
+export * from './notation';
 
 /** `auto` 指定時に使われる形式判定。判定順は誤検出が少ない順。 */
 export function detectFormat(text: string): Exclude<InputFormat, 'auto'> {

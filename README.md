@@ -75,19 +75,33 @@ npm test         # ロジックのテスト
 
 ```
 src/
-  lib/
+  lib/                  変換ロジック（UI に依存しない・単体テスト済み）
     types.ts            表のモデルと共通ユーティリティ
     table-ops.ts        行・列の挿入 / 削除、転置、整形
+    table-block.ts      ソース中の表の範囲を探す / 挿入時の改行を整える
     clipboard.ts        クリップボードの読み書き
     useTableHistory.ts  元に戻す / やり直す
     parse/              テキスト → 表（html / markdown / backlog / delimited と形式判定）
     format/             表 → テキスト（markdown / backlog / delimited / html と表示幅計算）
-  components/
+  components/           Web アプリと拡張機能で共有
     TableGrid.tsx       編集グリッド（react-masume-grid のラッパー）
     AlignmentBar.tsx    列ごとの寄せ指定
-    ImportPanel.tsx     取り込み
-    OutputPanel.tsx     変換結果
-  App.tsx
+  web/                  Web アプリ
+    App.tsx / main.tsx / styles.css
+    components/         ImportPanel（取り込み）, OutputPanel（変換結果）
+  extension/            Chrome / Edge 拡張機能（README はこの下）
 ```
 
 変換ロジックは `src/lib` に閉じていて UI に依存しません（`*.test.ts` で単体テスト済み）。
+Web アプリと拡張機能はこの層と `src/components` を共有しています。
+
+## Chrome / Edge 拡張機能
+
+Backlog の課題編集画面で、入力欄を右クリックして表を編集・挿入したり、表示中の表を
+Markdown / Backlog 記法でコピーしたりできる拡張機能も同梱しています。
+
+```sh
+npm run build:extension   # dist-extension/ に出力し、ブラウザから読み込む
+```
+
+詳細は [`src/extension/README.md`](src/extension/README.md) を参照してください。

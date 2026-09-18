@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NormalizedRange } from 'react-masume-grid';
 import 'react-masume-grid/styles.css';
-import { TableGrid } from './components/TableGrid';
-import { AlignmentBar } from './components/AlignmentBar';
+import { TableGrid } from '../components/TableGrid';
+import { AlignmentBar } from '../components/AlignmentBar';
 import { ImportPanel } from './components/ImportPanel';
 import { OutputPanel } from './components/OutputPanel';
-import type { Align, ParsedTable, TableModel } from './lib/types';
-import { columnCount, fitAligns, normalizeRows } from './lib/types';
+import type { Align, ParsedTable, TableModel } from '../lib/types';
+import { columnCount, fitAligns, normalizeRows } from '../lib/types';
 import {
   emptyTable,
   insertColumn,
@@ -18,8 +18,8 @@ import {
   transpose,
   trimCells,
   trimEmpty,
-} from './lib/table-ops';
-import { useTableHistory } from './lib/useTableHistory';
+} from '../lib/table-ops';
+import { useTableHistory } from '../lib/useTableHistory';
 
 const SAMPLE: TableModel = {
   rows: [

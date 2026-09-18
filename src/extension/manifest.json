@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Backlog 表エディタ",
+  "version": "0.1.0",
+  "description": "Backlog の入力欄で表を編集・挿入し、表示中の表を Markdown / Backlog 記法でコピーします。",
+  "permissions": ["contextMenus", "clipboardWrite"],
+  "host_permissions": [
+    "https://*.backlog.com/*",
+    "https://*.backlog.jp/*",
+    "https://*.backlogtool.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.backlog.com/*",
+        "https://*.backlog.jp/*",
+        "https://*.backlogtool.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "icons": {
+    "128": "icon128.png"
+  }
+}

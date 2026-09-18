@@ -1,0 +1,215 @@
+/*
+ * オーバーレイの見た目。Shadow DOM の中に入れるのでページ側の CSS とは干渉しない。
+ * 逆にページのフォント設定なども継承しないため、必要な指定はここで閉じる。
+ */
+:host {
+  all: initial;
+}
+
+.tt-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(15 20 28 / 45%);
+  font-family: system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', Meiryo,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1c2430;
+}
+
+.tt-modal {
+  width: min(880px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgb(15 20 28 / 32%);
+  padding: 18px;
+}
+
+.tt-modal__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.tt-modal__title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.tt-close {
+  font-size: 20px;
+  line-height: 1;
+  padding: 2px 9px;
+}
+
+.tt-toolbar,
+.tt-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tt-foot {
+  margin: 14px 0 0;
+  border-top: 1px solid #d8dee7;
+  padding-top: 14px;
+}
+
+.tt-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #647085;
+}
+
+.tt-note {
+  font-size: 12px;
+  color: #647085;
+}
+
+.tt-spacer {
+  flex: 1 1 auto;
+}
+
+.tt-root button {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid #d8dee7;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #1c2430;
+  cursor: pointer;
+}
+
+.tt-root button:hover:not(:disabled) {
+  border-color: #2f6df6;
+  color: #2f6df6;
+}
+
+.tt-root button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tt-root button.tt-primary {
+  background: #2f6df6;
+  border-color: #2f6df6;
+  color: #ffffff;
+}
+
+.tt-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #647085;
+}
+
+.tt-field select {
+  font: inherit;
+  font-size: 13px;
+  color: #1c2430;
+  background: #ffffff;
+  border: 1px solid #d8dee7;
+  border-radius: 7px;
+  padding: 5px 8px;
+}
+
+.tt-field--check {
+  cursor: pointer;
+}
+
+/* 共有コンポーネント（寄せバー）のクラス名に合わせた最小限の指定。 */
+.align-bar {
+  margin-top: 14px;
+  border-top: 1px dashed #d8dee7;
+  padding-top: 12px;
+}
+
+.align-bar__head,
+.align-bar__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.align-bar__head {
+  margin-bottom: 8px;
+}
+
+.align-bar__title,
+.align-bar__all,
+.align-bar__label {
+  font-size: 12px;
+  color: #647085;
+}
+
+.align-bar__all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.align-bar__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d8dee7;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+.align-bar__label {
+  max-width: 9em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.align-bar__buttons {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.tt-root button.chip {
+  padding: 2px 7px;
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 6px;
+}
+
+.tt-root button.chip--on {
+  background: #2f6df6;
+  border-color: #2f6df6;
+  color: #ffffff;
+}
+
+/* 通知トースト。編集画面を開かないコピー操作の結果を伝える。 */
+.tt-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #1c2430;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', Meiryo,
+    sans-serif;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgb(15 20 28 / 32%);
+}

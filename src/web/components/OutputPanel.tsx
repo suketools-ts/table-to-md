@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import type { TableModel } from '../lib/types';
-import { toBacklog, toCsv, toHtml, toMarkdown, toTsv } from '../lib/format';
-import { copyToClipboard } from '../lib/clipboard';
+import type { TableModel } from '../../lib/types';
+import { toBacklog, toCsv, toHtml, toMarkdown, toTsv } from '../../lib/format';
+import { copyToClipboard } from '../../lib/clipboard';
 
 type OutputKind = 'markdown' | 'backlog' | 'csv' | 'tsv' | 'html';
 

@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, ClipboardEvent } from 'react';
-import type { InputFormat, ParsedTable } from '../lib/types';
-import { detectFormat, parseTable } from '../lib/parse';
-import { readClipboard } from '../lib/clipboard';
+import type { InputFormat, ParsedTable } from '../../lib/types';
+import { detectFormat, parseTable } from '../../lib/parse';
+import { readClipboard } from '../../lib/clipboard';
 
 interface Props {
   onApply: (table: ParsedTable, mode: 'replace' | 'append') => void;
