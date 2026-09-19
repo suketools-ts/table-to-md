@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ProseMirror 検証用ページ</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 24px; max-width: 900px; }
+      .ProseMirror { border: 1px solid #ccc; padding: 8px; min-height: 160px; white-space: pre-wrap; }
+      .ProseMirror p { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <h1>コメント欄（本物の ProseMirror）</h1>
+    <div id="pm-mount"></div>
+    <script>
+      let listener = null;
+      window.chrome = { runtime: { onMessage: { addListener: (fn) => { listener = fn; } } } };
+      window.__send = (message) => listener(message, {}, () => {});
+    </script>
+    <script type="module" src="./prosemirror-bundle.js"></script>
+    <script src="../dist-extension/content.js"></script>
+  </body>
+</html>

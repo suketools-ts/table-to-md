@@ -68,7 +68,7 @@ function editTableAtCaret(): void {
       mode: 'replace',
       notationNote: `自動判定: ${NOTATION_LABEL[notation]}`,
       onSubmit: (table, chosen) => {
-        target.editable.replaceRange(block.start, block.end, formatTable(table, chosen));
+        void target.editable.replaceRange(block.start, block.end, formatTable(table, chosen));
       },
     });
     return;
@@ -92,7 +92,7 @@ function editTableAtCaret(): void {
         source.slice(target.end),
         formatTable(table, chosen),
       );
-      target.editable.replaceRange(target.start, target.end, text);
+      void target.editable.replaceRange(target.start, target.end, text);
     },
   });
 }

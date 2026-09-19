@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b --noEmit",
     "build:artifact": "npm run build && node scripts/make-artifact-page.mjs",
-    "build:extension": "node scripts/build-extension.mjs"
+    "build:extension": "node scripts/build-extension.mjs",
+    "build:fixtures": "node scripts/build-fixtures.mjs",
+    "test:extension": "npm run build:extension && npm run build:fixtures && node extension-test/verify.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
@@ -27,6 +29,11 @@
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^30.1.0",
     "oxlint": "^1.81.0",
+    "playwright": "^1.55.1",
+    "prosemirror-model": "^1.25.11",
+    "prosemirror-schema-basic": "^1.2.4",
+    "prosemirror-state": "^1.4.4",
+    "prosemirror-view": "^1.42.4",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"

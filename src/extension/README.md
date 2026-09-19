@@ -45,16 +45,25 @@ npm run build:extension   # dist-extension/ に出力
 別のドメインで使う場合は `src/extension/manifest.json` の `host_permissions` と
 `content_scripts.matches` に足してください。
 
-## 動作確認用のページ
+## 動作確認
 
-`extension-test/fixture.html` は Backlog の編集画面を模した検証用ページです。
-`chrome` API を最小限だけ模倣していて、拡張機能を読み込まなくても
-コンソールから `__send({ type: 'edit-table' })` などで動作を試せます。
+表の変換ロジックは vitest で押さえていますが、**入力欄への書き戻しだけはブラウザと
+エディタの実装に強く依存する**ので、実ブラウザで通しの確認をします。
 
 ```sh
-npm run build:extension
-# ブラウザで extension-test/fixture.html を開く
+npm run test:extension
 ```
+
+`extension-test/` に 2 つの検証用ページがあります。
+
+| ページ | 内容 |
+| --- | --- |
+| `prosemirror.html` | **本物の ProseMirror** で Backlog のコメント欄と同じ構成を再現したもの |
+| `fixture.html` | `<textarea>`・素の contenteditable・表示用テーブルを並べたもの |
+
+どちらも `chrome` API を最小限だけ模倣しているので、拡張機能を読み込まなくても
+コンソールから `__send({ type: 'edit-table' })` で手動でも試せます
+（ES モジュールを使うため `file://` ではなく HTTP で開いてください）。
 
 ## 構成
 
@@ -75,10 +84,33 @@ npm run build:extension
 どの要素を右クリックしたかは分かりません。コンテンツスクリプト側で `contextmenu` を
 capture 段階で拾い、対象の要素とカーソル位置を控えています。
 
-**入力欄への書き戻し** — `document.execCommand('insertText')` を第一手にしています。
+**入力欄の読み取り** — Backlog のコメント欄は ProseMirror で、1 行が 1 つの `<p>` です。
+`innerText` はブロック要素に余分な改行を入れるため行がずれる（実測で
+`テスト文書\n\n\n\n\n|header1...` のようになる）ので、ブロック要素を 1 行として
+自前で組み立てています。あわせて、文字位置から DOM の位置を引ける対応表も作ります。
+
+**右クリック対象の特定** — 右クリックの対象は編集ホストではなく中の `<p>` になります。
+contenteditable は子孫に継承されるので `<p>` 自体も `isContentEditable` が true になり、
+そのまま扱うと段落 1 つだけを入力欄と誤認します。編集可能な祖先をたどって根本を取ります。
+
+**textarea への書き戻し** — `document.execCommand('insertText')` を第一手にしています。
 古い API ですが、ページ側の取り消し履歴（Ctrl+Z）を保ったまま挿入でき、`input` イベントも
-発生する唯一の手段です。使えない場合は、`value` のプロトタイプ setter を通してから
+発生する手段です。使えない場合は、`value` のプロトタイプ setter を通してから
 `input` を発火させる経路に落ちます（React などが値を監視している場合に変更を拾わせるため）。
+
+**リッチエディタへの書き戻し** — ProseMirror は DOM を直接書き換えられることを想定して
+おらず、自前で入力を解釈して内部状態を更新します。ここには 3 つの落とし穴があり、
+いずれも実際に動かして分かったものです。
+
+1. **エディタは自前の選択状態を持つ。** DOM の選択を変えただけでは伝わらず、
+   貼り付けが元のカーソル位置に入って古い表が消えませんでした。フォーカスを戻し、
+   選択を上書きし、`selectionchange` が伝わるのを待ってから貼り付けます。
+2. **プレーンテキストの貼り付けでは空行を作れない。** ProseMirror は
+   `split(/(?:\r\n?|\n)+/)` で行に割るため連続する改行が 1 つに潰れます。
+   Markdown の表は直前に空行が無いと表として解釈されないので、`<p>` を並べた
+   `text/html` も一緒に渡します。
+3. **HTML は連続する空白を畳む。** そのままだと桁そろえの空白が失われるので、
+   各段落に `white-space: pre-wrap` を指定します。これで空行と桁そろえの両方が残ります。
 
 **画面の隔離** — 編集画面は Shadow DOM の中に立てています。ページ側の CSS を持ち込まず、
 こちらの CSS も外へ漏らしません。スタイルは `?inline` で文字列として取り込み、

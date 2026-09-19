@@ -12,23 +12,37 @@ export interface EditableTarget {
   /**
    * 文字位置 start〜end を text で置き換える。
    * ページ側の取り消し履歴を壊さず input イベントも飛ぶ経路を優先する。
+   * リッチエディタに選択範囲を認識させる待ちが要るため非同期。
    */
-  replaceRange(start: number, end: number, text: string): boolean;
+  replaceRange(start: number, end: number, text: string): Promise<boolean>;
 }
 
 function isTextInput(el: Element): el is HTMLTextAreaElement | HTMLInputElement {
   if (el instanceof HTMLTextAreaElement) return true;
-  // 1 行入力でも表を書くことはないが、判定だけは通しておく。
+  // 1 行入力で表を書くことはないが、判定だけは通しておく。
   return el instanceof HTMLInputElement && /^(text|search|url|tel|email)$/.test(el.type);
 }
 
-function isContentEditable(el: Element): el is HTMLElement {
-  return el instanceof HTMLElement && el.isContentEditable;
+/**
+ * contenteditable の「編集ホスト」（contenteditable を宣言している根本の要素）を探す。
+ *
+ * 右クリックの対象は編集ホストではなく中の `<p>` などになる。contenteditable は
+ * 子孫に継承されるので `<p>` 自体も isContentEditable が true になり、そのまま扱うと
+ * 段落 1 つだけを入力欄と誤認してしまう。編集可能な祖先をたどって根本を取る。
+ */
+function editingHost(start: Element | null): HTMLElement | null {
+  let host: HTMLElement | null = null;
+  let node: Element | null = start;
+  while (node instanceof HTMLElement && node.isContentEditable) {
+    host = node;
+    node = node.parentElement;
+  }
+  return host;
 }
 
 /**
  * `execCommand('insertText')` は古い API だが、ページの取り消し履歴（Ctrl+Z）を保ったまま
- * 文字を挿入し、`input` イベントも発生させられる唯一の手段なのでこれを第一手にする。
+ * 文字を挿入し、`input` イベントも発生させられる手段なのでこれを第一手にする。
  */
 function insertText(text: string): boolean {
   try {
@@ -56,7 +70,7 @@ class TextInputTarget implements EditableTarget {
     };
   }
 
-  replaceRange(start: number, end: number, text: string): boolean {
+  async replaceRange(start: number, end: number, text: string): Promise<boolean> {
     this.el.focus();
     this.el.setSelectionRange(start, end);
     if (insertText(text)) return true;
@@ -78,19 +92,93 @@ class TextInputTarget implements EditableTarget {
   }
 }
 
-/** contenteditable 内のテキストノードを、文字位置つきで順に並べる。 */
-function textNodes(root: HTMLElement): Array<{ node: Text; start: number; end: number }> {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const result: Array<{ node: Text; start: number; end: number }> = [];
-  let offset = 0;
-  let node = walker.nextNode() as Text | null;
-  while (node) {
-    const length = node.data.length;
-    result.push({ node, start: offset, end: offset + length });
-    offset += length;
-    node = walker.nextNode() as Text | null;
-  }
-  return result;
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * 1 行 1 段落の HTML にする。
+ *
+ * ProseMirror はプレーンテキストの貼り付けを `split(/(?:\r\n?|\n)+/)` で行に割るため、
+ * 連続する改行が 1 つに潰れて空行を作れない。Markdown の表は直前に空行が無いと
+ * 表として解釈されないので、空行を保てる HTML も一緒に渡す。
+ *
+ * ただし HTML は既定で連続する空白を 1 つに畳んでしまい、桁そろえのための空白が
+ * 失われる。`white-space: pre-wrap` を指定するとエディタ側の HTML 解釈が
+ * 空白を保つようになるので、空行と桁そろえの両方を残せる。
+ */
+function asParagraphs(text: string): string {
+  return text
+    .split('\n')
+    .map((line) =>
+      line === '' ? '<p><br></p>' : `<p style="white-space:pre-wrap">${escapeHtml(line)}</p>`,
+    )
+    .join('');
+}
+
+/** 次のタスクまで待つ。selectionchange など非同期に伝わるイベントを挟むため。 */
+function nextTask(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+}
+
+/** 1 行として扱うブロック要素。 */
+const BLOCK_TAGS = new Set([
+  'P', 'DIV', 'LI', 'BLOCKQUOTE', 'PRE', 'SECTION', 'ARTICLE',
+  'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'TR', 'DT', 'DD',
+]);
+
+/** テキストノードと、組み立てた文字列上での位置の対応。 */
+interface Piece {
+  node: Text;
+  start: number;
+  end: number;
+}
+
+/**
+ * contenteditable の中身をソーステキストとして組み立てる。
+ *
+ * ProseMirror などのエディタは 1 行を 1 つの `<p>` で表す。`innerText` はブロック要素に
+ * 余分な改行を入れるため行がずれるので、ブロック要素を 1 行として自前で組み立てる。
+ * 併せて、文字位置から DOM の位置を引けるようテキストノードの対応表も作る。
+ */
+export function serialize(host: HTMLElement): { text: string; pieces: Piece[] } {
+  let text = '';
+  const pieces: Piece[] = [];
+  let blockSeen = false;
+
+  const isPlaceholderBreak = (el: Element) => el === el.parentNode?.lastChild;
+
+  const walk = (node: Node): void => {
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        const data = (child as Text).data;
+        pieces.push({ node: child as Text, start: text.length, end: text.length + data.length });
+        text += data;
+        continue;
+      }
+      if (!(child instanceof HTMLElement)) continue;
+
+      if (child.tagName === 'BR') {
+        // 空段落を保つための末尾の `<br>`（ProseMirror-trailingBreak など）は行に数えない。
+        if (!isPlaceholderBreak(child)) text += '\n';
+        continue;
+      }
+      if (BLOCK_TAGS.has(child.tagName)) {
+        if (blockSeen) text += '\n';
+        blockSeen = true;
+      }
+      walk(child);
+    }
+  };
+
+  walk(host);
+  return { text, pieces };
 }
 
 class ContentEditableTarget implements EditableTarget {
@@ -101,57 +189,88 @@ class ContentEditableTarget implements EditableTarget {
   }
 
   getValue(): string {
-    // innerText は表示上の改行を反映するので、ソースとして読むにはこちらが近い。
-    return this.el.innerText;
+    return serialize(this.el).text;
   }
 
   /** DOM 上の位置を、getValue() の文字位置に直す。 */
-  private offsetOf(container: Node, offset: number): number {
-    const nodes = textNodes(this.el);
+  private offsetOf(pieces: Piece[], container: Node, offset: number): number {
     if (container.nodeType === Node.TEXT_NODE) {
-      const found = nodes.find((entry) => entry.node === container);
-      return found ? found.start + offset : 0;
+      const found = pieces.find((piece) => piece.node === container);
+      return found ? found.start + Math.min(offset, found.node.data.length) : 0;
     }
-    // 要素ノードを指している場合は、その手前までの文字数を足し合わせる。
+    // 要素ノードを指している場合は、その位置より後ろにある最初のテキストノードに寄せる。
     const child = container.childNodes[offset];
-    if (!child) return this.getValue().length;
-    const found = nodes.find((entry) => entry.node === child || child.contains(entry.node));
+    if (!child) {
+      const inside = pieces.filter((piece) => container.contains(piece.node));
+      return inside.length > 0 ? inside[inside.length - 1].end : 0;
+    }
+    const found = pieces.find((piece) => piece.node === child || child.contains(piece.node));
     return found ? found.start : 0;
   }
 
   getSelection() {
+    const { text, pieces } = serialize(this.el);
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) {
-      const length = this.getValue().length;
-      return { start: length, end: length };
-    }
+    if (!selection || selection.rangeCount === 0) return { start: text.length, end: text.length };
+
     const range = selection.getRangeAt(0);
-    const start = this.offsetOf(range.startContainer, range.startOffset);
-    const end = this.offsetOf(range.endContainer, range.endOffset);
+    if (!this.el.contains(range.startContainer)) return { start: text.length, end: text.length };
+
+    const start = this.offsetOf(pieces, range.startContainer, range.startOffset);
+    const end = this.offsetOf(pieces, range.endContainer, range.endOffset);
     return { start: Math.min(start, end), end: Math.max(start, end) };
   }
 
-  private locate(offset: number): { node: Text; offset: number } | null {
-    const nodes = textNodes(this.el);
-    if (nodes.length === 0) return null;
-    const found = nodes.find((entry) => offset >= entry.start && offset <= entry.end);
-    const entry = found ?? nodes[nodes.length - 1];
-    return { node: entry.node, offset: Math.min(offset - entry.start, entry.node.data.length) };
+  /** 文字位置に対応する DOM の位置を求める。 */
+  private locate(pieces: Piece[], offset: number): { node: Text; offset: number } | null {
+    if (pieces.length === 0) return null;
+    const inside = pieces.find((piece) => offset >= piece.start && offset <= piece.end);
+    const piece = inside ?? (offset < pieces[0].start ? pieces[0] : pieces[pieces.length - 1]);
+    return {
+      node: piece.node,
+      offset: Math.max(0, Math.min(offset - piece.start, piece.node.data.length)),
+    };
   }
 
-  replaceRange(start: number, end: number, text: string): boolean {
-    const from = this.locate(start);
-    const to = this.locate(end);
+  async replaceRange(start: number, end: number, text: string): Promise<boolean> {
+    const { pieces } = serialize(this.el);
+    const from = this.locate(pieces, start);
+    const to = this.locate(pieces, end);
     if (!from || !to) return false;
 
+    // ProseMirror などのエディタは自前の選択状態を持っていて、フォーカス時にそれを
+    // DOM 側へ復元する。先にフォーカスを戻し、復元が済んでから選択を上書きする。
     this.el.focus();
+    await nextTask();
+
+    const selection = window.getSelection();
+    if (!selection) return false;
     const range = document.createRange();
     range.setStart(from.node, from.offset);
     range.setEnd(to.node, to.offset);
-    const selection = window.getSelection();
-    if (!selection) return false;
     selection.removeAllRanges();
     selection.addRange(range);
+
+    // DOM の選択変更は selectionchange イベント経由で非同期に伝わる。エディタが
+    // 内部状態へ取り込むのを待たずに貼り付けると、元のカーソル位置に挿入されてしまう。
+    await nextTask();
+
+    // リッチエディタは DOM を直接書き換えられることを想定しておらず、自前で入力を
+    // 解釈して内部状態を更新する。複数行を行の構造ごと正しく解釈してもらえるよう、
+    // 貼り付けとして渡すのが最も確実。
+    const transfer = new DataTransfer();
+    transfer.setData('text/plain', text);
+    transfer.setData('text/html', asParagraphs(text));
+    const event = new ClipboardEvent('paste', {
+      clipboardData: transfer,
+      bubbles: true,
+      cancelable: true,
+    });
+    this.el.dispatchEvent(event);
+    if (event.defaultPrevented) return true;
+
+    // 誰も貼り付けを処理しなかった場合（素の contenteditable）はこちら。
+    // 合成イベントでは既定の貼り付け動作が走らないため、自分で挿入する。
     return insertText(text);
   }
 }
@@ -160,6 +279,6 @@ class ContentEditableTarget implements EditableTarget {
 export function asEditable(el: Element | null): EditableTarget | null {
   if (!el) return null;
   if (isTextInput(el)) return new TextInputTarget(el);
-  if (isContentEditable(el)) return new ContentEditableTarget(el);
-  return null;
+  const host = editingHost(el);
+  return host ? new ContentEditableTarget(host) : null;
 }
