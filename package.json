@@ -31,7 +31,6 @@
     "oxlint": "^1.81.0",
     "playwright": "^1.55.1",
     "prosemirror-model": "^1.25.11",
-    "prosemirror-schema-basic": "^1.2.4",
     "prosemirror-state": "^1.4.4",
     "prosemirror-view": "^1.42.4",
     "typescript": "~6.0.2",
