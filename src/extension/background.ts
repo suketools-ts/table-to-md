@@ -1,15 +1,13 @@
-import {
-  MENU_COPY_BACKLOG,
-  MENU_COPY_MARKDOWN,
-  MENU_EDIT_TABLE,
-  type Command,
-} from './messages';
+import { MENU_CONVERT_TABLE, MENU_EDIT_TABLE, type Command } from './messages';
 
 /**
  * 右クリックメニューを組み立てる。
  *
- * `contexts: ['editable']` は入力欄の上でだけ、`['selection']` は範囲選択中だけ
- * 項目を出す。どの要素を右クリックしたかはここでは分からないので、実際の処理は
+ * `contexts: ['editable']` は入力欄の上でだけ項目を出す。変換の方は入力欄以外の
+ * どこでも出したいので、入力欄を除いた文脈を並べている（表のセルの上は 'page'、
+ * セル内のリンクや画像の上ではそれぞれ 'link' / 'image' になるため）。
+ *
+ * どの要素を右クリックしたかはここでは分からないので、実際の処理は
  * コンテンツスクリプト側（右クリックされた要素を控えている）に投げる。
  */
 function buildMenus(): void {
@@ -20,14 +18,9 @@ function buildMenus(): void {
       contexts: ['editable'],
     });
     chrome.contextMenus.create({
-      id: MENU_COPY_MARKDOWN,
-      title: '選択した表を Markdown でコピー',
-      contexts: ['selection'],
-    });
-    chrome.contextMenus.create({
-      id: MENU_COPY_BACKLOG,
-      title: '選択した表を Backlog 記法でコピー',
-      contexts: ['selection'],
+      id: MENU_CONVERT_TABLE,
+      title: 'この表を Markdown / Backlog 記法に変換',
+      contexts: ['page', 'selection', 'link', 'image'],
     });
   });
 }
@@ -37,8 +30,7 @@ chrome.runtime.onStartup.addListener(buildMenus);
 
 const COMMANDS: Record<string, Command> = {
   [MENU_EDIT_TABLE]: { type: 'edit-table' },
-  [MENU_COPY_MARKDOWN]: { type: 'copy-table', notation: 'markdown' },
-  [MENU_COPY_BACKLOG]: { type: 'copy-table', notation: 'backlog' },
+  [MENU_CONVERT_TABLE]: { type: 'convert-table' },
 };
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {

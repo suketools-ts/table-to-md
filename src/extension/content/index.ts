@@ -1,13 +1,12 @@
 import type { Command } from '../messages';
 import { asEditable, type EditableTarget } from './editable';
-import { tablesInSelection } from './selection';
-import { closeEditor, openEditor, showToast } from './overlay';
+import { tablesInSelection, tablesNear } from './selection';
+import { closeEditor, openEditor, openSourceDialog, showToast } from './overlay';
 import { findTableBlockAt, padForInsertion } from '../../lib/table-block';
 import { detectNotation, parseNotation, type Notation } from '../../lib/parse/notation';
 import { parseHtmlTable } from '../../lib/parse/html';
 import { toBacklog } from '../../lib/format/backlog';
 import { toMarkdown } from '../../lib/format/markdown';
-import { copyToClipboard } from '../../lib/clipboard';
 import type { TableModel } from '../../lib/types';
 import { normalizeRows } from '../../lib/types';
 import { emptyTable } from '../../lib/table-ops';
@@ -23,11 +22,14 @@ const NOTATION_LABEL: Record<Notation, string> = {
  * メニューが開いている間にページ側で選択が変わることがあるため、位置もここで固定する。
  */
 let lastTarget: { editable: EditableTarget; start: number; end: number } | null = null;
+/** 入力欄に限らず、最後に右クリックされた要素。表を探す起点に使う。 */
+let lastElement: Element | null = null;
 
 document.addEventListener(
   'contextmenu',
   (event) => {
-    const editable = asEditable(event.target as Element | null);
+    lastElement = event.target as Element | null;
+    const editable = asEditable(lastElement);
     if (!editable) {
       lastTarget = null;
       return;
@@ -97,31 +99,32 @@ function editTableAtCaret(): void {
   });
 }
 
-/** 選択範囲の表を指定された記法でコピーする。 */
-async function copySelectedTable(notation: Notation): Promise<void> {
-  const tables = tablesInSelection(window.getSelection());
+/**
+ * 右クリックした位置（または選択範囲）の表をソースに変換して見せる。
+ *
+ * 記法はダイアログ側で切り替えられるようにしてある。表示中の表からソースを起こすとき、
+ * どちらの記法で欲しいかはその場の用途によって変わるため。
+ */
+function convertTableToSource(): void {
+  // 明示的に選択しているならそちらを優先し、無ければ右クリック位置から探す。
+  const found = tablesInSelection(window.getSelection());
+  const tables = found.length > 0 ? found : tablesNear(lastElement);
+
   if (tables.length === 0) {
-    showToast('選択範囲に表が見つかりませんでした。');
+    showToast('この辺りに表が見つかりませんでした。');
     return;
   }
 
-  const sources = tables.map((table) => {
+  const models: TableModel[] = tables.map((table) => {
     const parsed = parseHtmlTable(table.outerHTML);
-    const model: TableModel = {
+    return {
       rows: normalizeRows(parsed.rows),
       hasHeader: parsed.hasHeader,
       aligns: parsed.aligns,
     };
-    return formatTable(model, notation);
   });
 
-  const ok = await copyToClipboard(sources.join('\n\n'));
-  const count = tables.length > 1 ? `${tables.length} 個の表を` : '';
-  showToast(
-    ok
-      ? `${count}${NOTATION_LABEL[notation]}でコピーしました。`
-      : 'クリップボードへの書き込みが拒否されました。',
-  );
+  openSourceDialog({ tables: models, notation: 'markdown' });
 }
 
 chrome.runtime.onMessage.addListener((message: Command) => {
@@ -129,8 +132,8 @@ chrome.runtime.onMessage.addListener((message: Command) => {
     editTableAtCaret();
     return;
   }
-  if (message.type === 'copy-table') {
-    void copySelectedTable(message.notation);
+  if (message.type === 'convert-table') {
+    convertTableToSource();
   }
 });
 

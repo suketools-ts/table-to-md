@@ -170,30 +170,74 @@ check(
   ['説明文です。', '', '| 商品名 | 単価 | 在庫 |h', '| いちご | 120  | 30   |', '| みかん | 80   | 120  |', '', '以上です。'].join('\n'),
 );
 
-console.log('\n[選択範囲] 表示中の表をコピー');
-const selectTable = () =>
-  page.evaluate(() => {
-    const range = document.createRange();
-    range.selectNodeContents(document.querySelector('#rendered table'));
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  });
-await selectTable();
-await page.evaluate(() => window.__send({ type: 'copy-table', notation: 'backlog' }));
+console.log('\n[表示中の表] 右クリックからソースに変換');
+/** 選択せずに、指定した要素の上で右クリックしたことにする。 */
+const rightClickOn = (selector) =>
+  page.evaluate((selector) => {
+    window.getSelection().removeAllRanges();
+    document.querySelector(selector).dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+  }, selector);
+
+// Backlog コメントの表。セルの上で右クリックする。
+await rightClickOn('#issueDescription td');
+await page.evaluate(() => window.__send({ type: 'convert-table' }));
+await shadow().waitFor({ timeout: 10000 });
+check('変換ダイアログを開く', await shadow().locator('.tt-modal__title').innerText(), '表をソースに変換');
+check(
+  '既定で Markdown を表示する',
+  (await shadow().locator('.tt-source').inputValue()).split('\n').slice(0, 2).join('\n'),
+  ['| No  | 種別 | 要求事項                                                                       |',
+   '| --- | ---- | ------------------------------------------------------------------------------ |'].join('\n'),
+);
+await shadow().getByRole('tab', { name: 'Backlog 記法' }).click();
+check(
+  'Backlog 記法に切り替えられる',
+  (await shadow().locator('.tt-source').inputValue()).split('\n')[0],
+  '| No | 種別 | 要求事項                                                                       |h',
+);
+await shadow().getByRole('button', { name: 'コピー' }).click();
 await page.waitForTimeout(400);
 check(
-  'Backlog 記法でコピーし rowspan を展開する',
-  await page.evaluate(() => navigator.clipboard.readText()),
+  'ダイアログからコピーできる',
+  (await page.evaluate(() => navigator.clipboard.readText())).split('\n')[0],
+  '| No | 種別 | 要求事項                                                                       |h',
+);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+
+// 表の外（同じコメント内の段落）で右クリックしても、そのコメントの表を拾う。
+await rightClickOn('#mockup');
+await page.evaluate(() => window.__send({ type: 'convert-table' }));
+await shadow().waitFor();
+check(
+  '表の外で右クリックしても同じコメントの表を拾う',
+  (await shadow().locator('.tt-source').inputValue()).split('\n')[0],
+  '| No  | 種別 | 要求事項                                                                       |',
+);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+
+// rowspan のある表。
+await rightClickOn('#rendered td');
+await page.evaluate(() => window.__send({ type: 'convert-table' }));
+await shadow().waitFor();
+await shadow().getByRole('tab', { name: 'Backlog 記法' }).click();
+check(
+  'rowspan を展開する',
+  await shadow().locator('.tt-source').inputValue(),
   ['| 担当 | 状態   | 期限       |h', '| 田中 | 処理中 | 2026-10-01 |', '| 鈴木 | 未対応 | 2026-10-05 |', '| 鈴木 | 完了   | 2026-09-30 |'].join('\n'),
 );
-await selectTable();
-await page.evaluate(() => window.__send({ type: 'copy-table', notation: 'markdown' }));
-await page.waitForTimeout(400);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+
+// 表が無いところ。
+await rightClickOn('h1');
+await page.evaluate(() => window.__send({ type: 'convert-table' }));
+await page.waitForTimeout(300);
 check(
-  'Markdown でコピーする',
-  (await page.evaluate(() => navigator.clipboard.readText())).split('\n')[1],
-  '| ---- | ------ | ---------- |',
+  '表が無ければそう伝える',
+  await page.locator('#table-to-md-overlay-host').locator('.tt-toast').innerText(),
+  'この辺りに表が見つかりませんでした。',
 );
 
 await browser.close();

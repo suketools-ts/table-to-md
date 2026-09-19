@@ -97,8 +97,9 @@ Web アプリと拡張機能はこの層と `src/components` を共有してい�
 
 ## Chrome / Edge 拡張機能
 
-Backlog の課題編集画面で、入力欄を右クリックして表を編集・挿入したり、表示中の表を
-Markdown / Backlog 記法でコピーしたりできる拡張機能も同梱しています。
+Backlog の課題編集画面で、入力欄を右クリックして表を編集・挿入したり、既存のコメントに
+書かれた表を右クリックして Markdown / Backlog 記法のソースに起こし直したりできる
+拡張機能も同梱しています。
 
 ```sh
 npm run build:extension   # dist-extension/ に出力し、ブラウザから読み込む
