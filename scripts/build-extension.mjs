@@ -8,7 +8,7 @@
  */
 import { build } from 'vite';
 import react from '@vitejs/plugin-react';
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -38,6 +38,14 @@ const bundle = ({ entry, name, format }) =>
 await bundle({ entry: 'src/extension/content/index.ts', name: 'content', format: 'iife' });
 await bundle({ entry: 'src/extension/background.ts', name: 'background', format: 'es' });
 
-await cp('src/extension/manifest.json', `${outDir}/manifest.json`);
+// 対象ドメインは hosts.json だけが持つ。manifest とメニューの条件がずれると
+// 「コンテンツスクリプトが動かないサイトにメニューが出る」といった食い違いが起きるため。
+const manifest = JSON.parse(await readFile('src/extension/manifest.json', 'utf8'));
+const hosts = JSON.parse(await readFile('src/extension/hosts.json', 'utf8'));
+delete manifest._comment;
+manifest.host_permissions = hosts;
+manifest.content_scripts[0].matches = hosts;
+await writeFile(`${outDir}/manifest.json`, `${JSON.stringify(manifest, null, 2)}\n`);
+
 await import('./make-icon.mjs');
 console.log('dist-extension/ に拡張機能を出力しました');

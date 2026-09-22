@@ -4,22 +4,15 @@
   "version": "0.1.0",
   "description": "Backlog の入力欄で表を表計算のように編集し、表示中の表を Markdown / Backlog 記法に変換します。ヌーラボ社の公式製品ではありません。",
   "permissions": ["contextMenus", "clipboardWrite"],
-  "host_permissions": [
-    "https://*.backlog.com/*",
-    "https://*.backlog.jp/*",
-    "https://*.backlogtool.com/*"
-  ],
+  "_comment": "host_permissions と content_scripts.matches は hosts.json から npm run build:extension で流し込む。対象ドメインを 1 か所で管理するため、ここは空にしてある。",
+  "host_permissions": [],
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://*.backlog.com/*",
-        "https://*.backlog.jp/*",
-        "https://*.backlogtool.com/*"
-      ],
+      "matches": [],
       "js": ["content.js"],
       "run_at": "document_idle",
       "all_frames": true

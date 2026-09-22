@@ -63,9 +63,22 @@ Chrome ウェブストアと Microsoft Edge アドオンに出すための文面
 
 ## 対象ドメイン
 
-`*.backlog.com` / `*.backlog.jp` / `*.backlogtool.com` を対象にしています。
-別のドメインで使う場合は `src/extension/manifest.json` の `host_permissions` と
-`content_scripts.matches` に足してください。
+`src/extension/hosts.json` が唯一の定義です。既定では `*.backlog.com` /
+`*.backlog.jp` / `*.backlogtool.com`。独自ドメインのスペースで使う場合はここに足して
+`npm run build:extension` をやり直してください。
+
+この 1 か所から 3 つの設定に流し込んでいます。
+
+| 流し込み先 | 役目 |
+| --- | --- |
+| `manifest.json` の `host_permissions` | 拡張機能がそのドメインで動く許可 |
+| `manifest.json` の `content_scripts.matches` | コンテンツスクリプトを入れるドメイン |
+| `contextMenus.create` の `documentUrlPatterns` | 右クリックメニューを出すドメイン |
+
+**3 つめは付け忘れやすく、実際に一度落としています。** 右クリックメニューは
+サービスワーカーが全サイト共通で作るので、`documentUrlPatterns` が無いと
+コンテンツスクリプトが動かないサイトにも項目が出てしまいます
+（`src/extension/background.test.ts` で押さえています）。
 
 ## 動作確認
 
