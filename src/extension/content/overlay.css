@@ -6,6 +6,19 @@
   all: initial;
 }
 
+/*
+ * ページの CSS を継承しないぶん、box-sizing も自分で決める必要がある。
+ * 既定の content-box のままだと、幅 100% の要素に padding と border が足されて
+ * 枠からはみ出す。グリッド側は自前で border-box を指定しているので影響しない。
+ */
+.tt-root,
+.tt-root *,
+.tt-root *::before,
+.tt-root *::after,
+.tt-toast {
+  box-sizing: border-box;
+}
+
 .tt-root {
   position: fixed;
   inset: 0;
@@ -20,6 +33,11 @@
   font-size: 14px;
   line-height: 1.6;
   color: #1c2430;
+}
+
+/* 枠自体は中に当てる先が無いときのフォーカスの受け皿。輪郭は出さない。 */
+.tt-root:focus {
+  outline: none;
 }
 
 .tt-modal {

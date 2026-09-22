@@ -20,16 +20,18 @@ const lines = [
   '|col1|col2|col3|',
 ];
 
-const doc = schema.node(
-  'doc',
-  null,
-  lines.map((line) =>
-    schema.node('paragraph', null, line === '' ? [] : [schema.text(line)]),
-  ),
-);
+/** 1 行 1 段落の文書を組み立てる。空行は中身の無い段落になる。 */
+const makeDoc = (source) =>
+  schema.node(
+    'doc',
+    null,
+    source.map((line) =>
+      schema.node('paragraph', null, line === '' ? [] : [schema.text(line)]),
+    ),
+  );
 
 const view = new EditorView(document.querySelector('#pm-mount'), {
-  state: EditorState.create({ doc, schema }),
+  state: EditorState.create({ doc: makeDoc(lines), schema }),
 });
 // Backlog と同じクラス・属性を載せる。
 view.dom.id = 'leftCommentContent';
@@ -39,5 +41,12 @@ view.dom.setAttribute('role', 'textbox');
 view.dom.setAttribute('translate', 'no');
 
 window.__pm = view;
+/**
+ * 文書の中身を差し替える。`['']` にすると、Backlog でコメント欄が空のときと同じ
+ * 「中身の無い段落がひとつだけ（テキストノードが無い）」状態になる。
+ */
+window.__pmSetLines = (source) => {
+  view.updateState(EditorState.create({ doc: makeDoc(source), schema }));
+};
 /** ProseMirror の内部状態から見たソーステキスト（期待値の突き合わせ用）。 */
 window.__pmText = () => view.state.doc.content.content.map((n) => n.textContent).join('\n');

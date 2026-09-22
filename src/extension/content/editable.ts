@@ -234,9 +234,6 @@ class ContentEditableTarget implements EditableTarget {
 
   async replaceRange(start: number, end: number, text: string): Promise<boolean> {
     const { pieces } = serialize(this.el);
-    const from = this.locate(pieces, start);
-    const to = this.locate(pieces, end);
-    if (!from || !to) return false;
 
     // ProseMirror などのエディタは自前の選択状態を持っていて、フォーカス時にそれを
     // DOM 側へ復元する。先にフォーカスを戻し、復元が済んでから選択を上書きする。
@@ -246,8 +243,20 @@ class ContentEditableTarget implements EditableTarget {
     const selection = window.getSelection();
     if (!selection) return false;
     const range = document.createRange();
-    range.setStart(from.node, from.offset);
-    range.setEnd(to.node, to.offset);
+
+    if (pieces.length === 0) {
+      // 空の入力欄にはテキストノードが無い。Backlog のコメント欄が空のときは
+      // 中身の無い段落がひとつあるだけ（`<p><br></p>`）で、文字位置から DOM の
+      // 位置を引くことができないので、入力欄の中身全体を選択範囲にする。
+      range.selectNodeContents(this.el);
+    } else {
+      const from = this.locate(pieces, start);
+      const to = this.locate(pieces, end);
+      if (!from || !to) return false;
+      range.setStart(from.node, from.offset);
+      range.setEnd(to.node, to.offset);
+    }
+
     selection.removeAllRanges();
     selection.addRange(range);
 

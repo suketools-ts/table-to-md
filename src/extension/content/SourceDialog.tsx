@@ -14,8 +14,8 @@ export interface SourceDialogProps {
 }
 
 const NOTATION_LABEL: Record<Notation, string> = {
-  markdown: 'Markdown',
   backlog: 'Backlog 記法',
+  markdown: 'Markdown',
 };
 
 /**
@@ -59,7 +59,7 @@ export function SourceDialog({ tables, notation: initial, onClose }: SourceDialo
       </div>
 
       <div className="tt-tabs" role="tablist">
-        {(['markdown', 'backlog'] as const).map((value) => (
+        {(['backlog', 'markdown'] as const).map((value) => (
           <button
             key={value}
             type="button"
@@ -80,6 +80,7 @@ export function SourceDialog({ tables, notation: initial, onClose }: SourceDialo
 
       <textarea
         className="tt-source"
+        data-autofocus
         value={source}
         readOnly
         spellCheck={false}

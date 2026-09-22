@@ -45,6 +45,20 @@ function formatTable(table: TableModel, notation: Notation): string {
   return notation === 'backlog' ? toBacklog(table) : toMarkdown(table);
 }
 
+/**
+ * 入力欄へ書き戻す。
+ * 書き戻しはページ側のエディタの作り次第で失敗し得るので、黙って終わらせず伝える。
+ */
+async function writeBack(
+  editable: EditableTarget,
+  start: number,
+  end: number,
+  text: string,
+): Promise<void> {
+  const ok = await editable.replaceRange(start, end, text);
+  if (!ok) showToast('入力欄へ書き戻せませんでした。');
+}
+
 /** カーソル位置の表を編集する。表が無ければ新規作成として開く。 */
 function editTableAtCaret(): void {
   const target = lastTarget;
@@ -70,7 +84,7 @@ function editTableAtCaret(): void {
       mode: 'replace',
       notationNote: `自動判定: ${NOTATION_LABEL[notation]}`,
       onSubmit: (table, chosen) => {
-        void target.editable.replaceRange(block.start, block.end, formatTable(table, chosen));
+        void writeBack(target.editable, block.start, block.end, formatTable(table, chosen));
       },
     });
     return;
@@ -94,7 +108,7 @@ function editTableAtCaret(): void {
         source.slice(target.end),
         formatTable(table, chosen),
       );
-      void target.editable.replaceRange(target.start, target.end, text);
+      void writeBack(target.editable, target.start, target.end, text);
     },
   });
 }
@@ -124,7 +138,7 @@ function convertTableToSource(): void {
     };
   });
 
-  openSourceDialog({ tables: models, notation: 'markdown' });
+  openSourceDialog({ tables: models, notation: 'backlog' });
 }
 
 chrome.runtime.onMessage.addListener((message: Command) => {
