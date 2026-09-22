@@ -48,6 +48,8 @@ npm test         # ロジックのテスト
 - **Markdown / Backlog 記法**: 既存の表を読み戻して編集できます。Markdown は区切り行から
   列の寄せも復元します。
 - **ファイル読み込み**: `.csv` / `.tsv` / `.md` / `.txt` を選択して読み込めます。
+  動作確認用のサンプルを `samples/sample.csv` と `samples/sample.tsv` に置いています
+  （見出し 1 行 + 4 行 × 3 列。CSV 側は区切り文字を含むセルをクォートした例つき）。
 - 「表に反映」で置き換え、「下に追加」で既存の表の下に行を足します。
 
 ### 表の編集
@@ -106,3 +108,9 @@ npm run build:extension   # dist-extension/ に出力し、ブラウザから読
 ```
 
 詳細は [`src/extension/README.md`](src/extension/README.md) を参照してください。
+ストアへの公開手順と提出用の文面は [`store/README.md`](store/README.md) に、
+プライバシーポリシーは [`docs/privacy.md`](docs/privacy.md) にあります。
+
+## ライセンス
+
+MIT License（[`LICENSE`](LICENSE)）

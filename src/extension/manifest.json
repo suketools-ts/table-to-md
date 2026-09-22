@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Backlog 表エディタ",
+  "name": "表エディタ for Backlog",
   "version": "0.1.0",
-  "description": "Backlog の入力欄で表を編集・挿入し、表示中の表を Markdown / Backlog 記法でコピーします。",
+  "description": "Backlog の入力欄で表を表計算のように編集し、表示中の表を Markdown / Backlog 記法に変換します。ヌーラボ社の公式製品ではありません。",
   "permissions": ["contextMenus", "clipboardWrite"],
   "host_permissions": [
     "https://*.backlog.com/*",
@@ -26,6 +26,9 @@
     }
   ],
   "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
     "128": "icon128.png"
   }
 }

@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 dist-extension
 extension-test/prosemirror-bundle.js
+
+# ストア提出用の zip
+*.zip
