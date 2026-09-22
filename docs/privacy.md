@@ -46,7 +46,7 @@
 
 提供者: tera（個人開発者）
 
-https://github.com/nsc-tera1234/table-to-md/issues
+https://github.com/suketools-ts/table-to-md/issues
 
 ### 免責
 
@@ -93,7 +93,7 @@ No data is collected, so none is shared.
 
 Provider: tera (individual developer)
 
-https://github.com/nsc-tera1234/table-to-md/issues
+https://github.com/suketools-ts/table-to-md/issues
 
 ### Disclaimer
 

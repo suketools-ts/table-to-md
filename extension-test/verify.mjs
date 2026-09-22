@@ -344,22 +344,22 @@ check(
 check(
   '既定で Backlog 記法を表示する',
   (await shadow().locator('.tt-source').inputValue()).split('\n')[0],
-  '| No | 種別 | 要求事項                                                                       |h',
+  '| No | 種別 | 要求事項                                                   |h',
 );
 await shadow().getByRole('tab', { name: 'Markdown' }).click();
 check(
   'Markdown に切り替えられる',
   (await shadow().locator('.tt-source').inputValue()).split('\n').slice(0, 2).join('\n'),
-  ['| No  | 種別 | 要求事項                                                                       |',
-   '| --- | ---- | ------------------------------------------------------------------------------ |'].join('\n'),
+  ['| No  | 種別 | 要求事項                                                   |',
+   '| --- | ---- | ---------------------------------------------------------- |'].join('\n'),
 );
 await shadow().getByRole('button', { name: 'コピー' }).click();
 await page.waitForTimeout(400);
 check(
   'ダイアログからコピーできる',
   (await page.evaluate(() => navigator.clipboard.readText())).split('\n').slice(0, 2).join('\n'),
-  ['| No  | 種別 | 要求事項                                                                       |',
-   '| --- | ---- | ------------------------------------------------------------------------------ |'].join('\n'),
+  ['| No  | 種別 | 要求事項                                                   |',
+   '| --- | ---- | ---------------------------------------------------------- |'].join('\n'),
 );
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
@@ -371,7 +371,7 @@ await shadow().waitFor();
 check(
   '表の外で右クリックしても同じコメントの表を拾う',
   (await shadow().locator('.tt-source').inputValue()).split('\n')[0],
-  '| No | 種別 | 要求事項                                                                       |h',
+  '| No | 種別 | 要求事項                                                   |h',
 );
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);

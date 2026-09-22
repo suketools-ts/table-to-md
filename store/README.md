@@ -80,7 +80,7 @@ Backlog 記法を選び、必要ならその場で切り替えられます。
 backlog.com / backlog.jp / backlogtool.com
 
 ■ ソースコードとお問い合わせ
-https://github.com/nsc-tera1234/table-to-md
+https://github.com/suketools-ts/table-to-md
 ```
 
 ## カテゴリ
@@ -147,8 +147,8 @@ backlog.com / backlog.jp / backlogtool.com only; the extension does not run anyw
 
 リポジトリの [`docs/privacy.md`](../docs/privacy.md) が本文です。次のどちらかを指定します。
 
-- GitHub Pages を `/docs` で有効にした場合: `https://nsc-tera1234.github.io/table-to-md/privacy.html`
-- Pages を使わない場合: `https://github.com/nsc-tera1234/table-to-md/blob/<公開ブランチ>/docs/privacy.md`
+- GitHub Pages を `/docs` で有効にした場合: `https://suketools-ts.github.io/table-to-md/privacy.html`
+- Pages を使わない場合: `https://github.com/suketools-ts/table-to-md/blob/<公開ブランチ>/docs/privacy.md`
 
 ## 画像
 
